@@ -1,0 +1,70 @@
+name: Codex Phase A
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 4:30pm America/Chicago during daylight time.
+    - cron: "30 21 * * 1-5"
+    # 4:30pm America/Chicago during standard time.
+    - cron: "30 22 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: codex-phase-a
+  cancel-in-progress: false
+
+jobs:
+  phase-a:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Central Time schedule
+        id: schedule_gate
+        shell: bash
+        run: |
+          should_run=true
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            tz_abbr="$(TZ=America/Chicago date +'%Z')"
+            schedule="${{ github.event.schedule }}"
+            if [[ "$schedule" == "30 21 * * 1-5" && "$tz_abbr" != "CDT" ]]; then
+              should_run=false
+            fi
+            if [[ "$schedule" == "30 22 * * 1-5" && "$tz_abbr" != "CST" ]]; then
+              should_run=false
+            fi
+          fi
+          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        if: steps.schedule_gate.outputs.should_run == 'true'
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git identity
+        if: steps.schedule_gate.outputs.should_run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Ensure workspace remains writable after safety hardening
+        if: steps.schedule_gate.outputs.should_run == 'true'
+        run: chmod -R g+rwX "$GITHUB_WORKSPACE"
+
+      - name: Run Codex Phase A
+        if: steps.schedule_gate.outputs.should_run == 'true'
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/prompts/phase-a.md
+          output-file: codex-phase-a-output.md
+          sandbox: workspace-write
+
+      - name: Upload Codex output
+        if: always() && steps.schedule_gate.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-phase-a-output
+          path: codex-phase-a-output.md
+          if-no-files-found: ignore

@@ -51,8 +51,9 @@ nervous. Here's what actually stands between a thesis and an order:
 - A [Robinhood](https://robinhood.com) account with
   [Agentic Trading](https://robinhood.com/us/en/agentic-trading/) enabled,
   connected via Robinhood's own MCP server.
-- [Claude Code](https://claude.com/claude-code), on a Pro subscription or
-  higher.
+- Codex via GitHub Actions for this fork, or
+  [Claude Code](https://claude.com/claude-code) if you use the original
+  routine prompts.
 - A GitHub account, to host your own copy of this repo — only needed
   for the cloud-hosted deployment (see "How it works" below for the
   cloud vs. local tradeoff).
@@ -194,8 +195,8 @@ improvements.
 1. Robinhood's [Agentic Trading](https://robinhood.com/us/en/agentic-trading/)
    requires a separate, dedicated account — distinct from your regular
    investing account, and restricted to only the funds you put in it. See
-   that page to open one and connect its MCP server to Claude Code (or to
-   your routine's MCP connections). Nothing below works without this:
+   that page to open one and connect its MCP server to Codex/Claude Code
+   (or to your routine's MCP connections). Nothing below works without this:
    every tool call in `PHASE_A_TASK.md`/`PHASE_B_TASK.md` (quotes,
    positions, orders, etc.) goes through it.
 2. Fill in `account_number` in `risk_rules.json` with your own Robinhood
@@ -268,11 +269,32 @@ repo itself (`risk_rules.json`, `pending_proposals.jsonl`,
   same cycle risks duplicate `risk_check`/`order` log entries, or
   duplicate real orders once `execution.mode` is `"live"`.
 
+### Codex GitHub setup
+
+This fork includes a Codex/GitHub Actions path in addition to the original
+Claude Code routine path:
+
+- `AGENTS.md` for repository-specific Codex instructions and safety rules.
+- `.github/codex/prompts/phase-a.md` and
+  `.github/codex/prompts/phase-b.md` for repeatable Codex runs.
+- `.github/workflows/codex-phase-a.yml` and
+  `.github/workflows/codex-phase-b.yml` for manual and scheduled GitHub
+  Actions runs.
+- `CODEX_SETUP.md` with the required GitHub secret, risk-rule setup, and
+  pre-live checklist.
+
+The GitHub workflows call `openai/codex-action@v1`; Codex reads
+`AGENTS.md`, follows the Phase task file, then commits/pushes the resulting
+JSONL state back to `main`. You must add `OPENAI_API_KEY` as a GitHub Actions
+secret and make the Robinhood MCP connection available to Codex before the
+workflows can perform real Phase A/B work.
+
 ### Routine prompt templates
 
 The task specs don't cover scheduling, dates, or saving results — that's
-up to whatever runs them. These are the real prompts this project's live
-deployment uses; copy one in and swap in your own account number.
+up to whatever runs them. The Codex prompts used by this fork live in
+`.github/codex/prompts/`. The original Claude Code prompt templates are
+kept below for reference.
 
 #### Phase A prompt
 
