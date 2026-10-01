@@ -2,11 +2,6 @@ name: Codex Phase A
 
 on:
   workflow_dispatch:
-  schedule:
-    # 4:30pm America/Chicago during daylight time.
-    - cron: "30 21 * * 1-5"
-    # 4:30pm America/Chicago during standard time.
-    - cron: "30 22 * * 1-5"
 
 permissions:
   contents: write
